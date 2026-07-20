@@ -91,6 +91,12 @@ mit Zugriffskontrolle über dieselben AD-Gruppen:
 ```
 valid users = @"HOMELAB\GG_IT"
 ```
+## 🖼️ Screenshots
+
+| | |
+|---|---|
+| ![AD-Struktur](screenshots/ad-struktur.png) Active-Directory-Struktur (OUs) | ![Samba-Zugriff](screenshots/samba-zugriff.png) Zugriff auf die Linux-Freigabe von CLIENT01 |
+| ![nmap-Test](screenshots/nmap-test.png) nmap-Verifikation der Firewall-Regeln | ![GPO-Ergebnis](screenshots/gpresult-1.png) gpresult-Bericht (angewendete Gruppenrichtlinien) |
 
 ## 🔥 Firewall-Konzept (verifiziert)
 
