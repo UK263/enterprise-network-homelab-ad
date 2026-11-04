@@ -68,10 +68,10 @@ homelab.local
 | GPO | Geltungsbereich | Wirkung |
 |---|---|---|
 | Default Domain Policy | Domänenweit | Passwortlänge ≥12, Komplexität, 90 Tage Ablauf |
-| GPO_IT_Laufwerke | OU „IT" | Automatische Netzlaufwerkzuordnung (Z:) |
+| GPO_IT_Laufwerk | OU „IT" | Automatische Netzlaufwerkzuordnung |
 | GPO_Clients_Sicherheit | OU „Clients" | Bildschirmsperre nach 10 Min, Kennwortschutz |
 
-Verifiziert über `gpresult /r` auf dem domänenbeigetretenen Windows-Client.
+Geprüft habe ich die Laufwerksrichtlinie mit dem HTML-Bericht von `gpresult /h` auf dem domänenbeigetretenen Windows-Client. Dort ist `GPO_IT_Laufwerk` angewendet, die Laufwerkzuordnung (Group Policy Drive Maps) war erfolgreich.
 
 ## 🐧 Linux-Integration (SSSD + Samba)
 
