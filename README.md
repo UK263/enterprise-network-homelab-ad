@@ -73,6 +73,10 @@ homelab.local
 
 Geprüft habe ich die Laufwerksrichtlinie mit dem HTML-Bericht von `gpresult /h` auf dem domänenbeigetretenen Windows-Client. Dort ist `GPO_IT_Laufwerk` angewendet, die Laufwerkzuordnung (Group Policy Drive Maps) war erfolgreich.
 
+![gpresult: GPO_IT_Laufwerk angewendet](screenshots/gpresult-2.png)
+
+*gpresult-Bericht: `GPO_IT_Laufwerk` angewendet, Group Policy Drive Maps erfolgreich.*
+
 ## 🐧 Linux-Integration (SSSD + Samba)
 
 Der Ubuntu-Server tritt der Windows-Domäne über **SSSD/realmd** bei und
