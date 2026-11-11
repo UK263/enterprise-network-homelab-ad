@@ -1,28 +1,20 @@
-# 🏢 Homelab: Virtualisierte Unternehmensinfrastruktur mit Active Directory
+# Homelab: virtualisiertes Firmennetz mit Active Directory
 
-Aufbau eines segmentierten Firmennetzwerks auf Proxmox-Basis mit
-Active-Directory-Domänenstruktur, Gruppenrichtlinien und einem
-domänenintegrierten Linux-Fileserver – der Fokus liegt bewusst auf
-klassischer IT-Systemadministration.
+## Was ist das Homelab
 
-> Privates Lernprojekt | Proxmox VE, OPNsense, Windows Server 2022, Ubuntu Server
+Ich habe auf Proxmox VE ein kleines, segmentiertes Firmennetz aufgebaut: Active Directory, Gruppenrichtlinien und ein Linux-Fileserver in der Domäne. Privat, zum Lernen. OPNsense, Windows Server 2022 und Ubuntu Server gehören dazu.
 
-## 📌 Ausgangslage & Ziel
+Der Schwerpunkt liegt auf klassischer IT-Systemadministration, als Ergänzung zu meinen ersten beiden Portfolio-Projekten (Docker/RAG und n8n-Automatisierung). Die waren eher Linux- bzw. API-lastig.
 
-Ziel war der Aufbau einer realistischen kleinen Firmennetzwerk-Umgebung,
-die die Kernkompetenzen klassischer Systemadministration abdeckt – als
-Ergänzung zu meinen ersten beiden Portfolio-Projekten (Docker/RAG und
-n8n-Automatisierung), die eher Linux- bzw. API-lastig waren.
+Dazu gehört:
 
-**Ziele:**
 - Netzwerksegmentierung mit VLANs und einer eigenen Firewall/Router-VM
 - Active-Directory-Domäne mit strukturierten Organisationseinheiten
 - Gruppenrichtlinien für Passwort-, Sicherheits- und Laufwerksrichtlinien
-- Ein Linux-Server, der sich gegen Windows-AD authentifiziert und als
-  Fileserver mit AD-Berechtigungen arbeitet
+- Ein Linux-Server, der sich gegen Windows-AD authentifiziert und als Fileserver mit AD-Berechtigungen arbeitet
 - Verifizierte Firewall-Regeln und eine funktionierende Backup-Strategie
 
-## 🏗️ Architektur
+## Aufbau und Netz
 
 ![Architektur-Übersicht](diagrams/architektur.png)
 
@@ -32,29 +24,28 @@ n8n-Automatisierung), die eher Linux- bzw. API-lastig waren.
 | 20 – Server | Domain Controller, Linux-Fileserver | 10.10.20.0/24 |
 | 30 – Clients | Windows-Arbeitsplätze (DHCP) | 10.10.30.0/24 |
 
-**Komponenten:**
-
 | VM | Rolle |
 |---|---|
-| **OPNsense** | Router, Firewall, DHCP, NAT zwischen den VLANs |
-| **DC01** (Windows Server 2022) | Active Directory, DNS, Gruppenrichtlinien |
-| **LX01** (Ubuntu Server) | Domänenintegrierter Fileserver (SSSD + Samba/winbind) |
-| **CLIENT01** (Windows 11 Pro) | Domänen-Client zum Testen von Anmeldung & GPOs |
+| OPNsense | Router, Firewall, DHCP, NAT zwischen den VLANs |
+| DC01 (Windows Server 2022) | Active Directory, DNS, Gruppenrichtlinien |
+| LX01 (Ubuntu Server) | Domänenintegrierter Fileserver (SSSD + Samba/winbind) |
+| CLIENT01 (Windows 11 Pro) | Domänen-Client zum Testen von Anmeldung und GPOs |
 
-## 🔐 Active Directory & Berechtigungskonzept (AGDLP)
+### Backup
 
-Benutzer und Gruppen folgen dem AGDLP-Prinzip (Accounts → Global Groups →
-Domain Local Groups → Permissions):
+Automatisiertes Proxmox-Backup (täglich, alle VMs, Snapshot-Modus). Erfolgreich getestet.
+
+## Active Directory und Gruppenrichtlinien
+
+Benutzer und Gruppen folgen dem AGDLP-Prinzip (Accounts → Global Groups → Domain Local Groups → Permissions):
 
 ```
 u.admin  →  GG_IT  →  DL_Fileserver_IT_ReadWrite  →  Freigabe-Zugriff
 ```
 
-Neue Mitarbeiter werden nur der globalen Gruppe hinzugefügt – alle bereits
-vergebenen Berechtigungen greifen automatisch, ohne dass Ressourcen einzeln
-angepasst werden müssen.
+Neue Mitarbeiter werden nur der globalen Gruppe hinzugefügt. Alle bereits vergebenen Berechtigungen greifen automatisch, ohne dass die Ressourcen einzeln angepasst werden müssen.
 
-**OU-Struktur:**
+OU-Struktur:
 
 ```
 homelab.local
@@ -62,8 +53,6 @@ homelab.local
 ├── Computer (Server, Clients)
 └── Gruppen
 ```
-
-## 🛡️ Gruppenrichtlinien (GPOs)
 
 | GPO | Geltungsbereich | Wirkung |
 |---|---|---|
@@ -77,41 +66,31 @@ Geprüft habe ich die Laufwerksrichtlinie mit dem HTML-Bericht von `gpresult /h`
 
 *gpresult-Bericht: `GPO_IT_Laufwerk` angewendet, Group Policy Drive Maps erfolgreich.*
 
-## 🐧 Linux-Integration (SSSD + Samba)
+## Linux-Integration
 
-Der Ubuntu-Server tritt der Windows-Domäne über **SSSD/realmd** bei und
-authentifiziert SSH-Logins direkt gegen Active Directory – kein einziges
-lokales Linux-Konto für die eigentlichen Nutzer nötig:
+Der Ubuntu-Server tritt der Windows-Domäne über SSSD/realmd bei und authentifiziert SSH-Logins gegen Active Directory. Ein lokales Linux-Konto für die eigentlichen Nutzer ist dafür nicht nötig.
 
 ```bash
 realm join --user=Administrator homelab.local
 realm permit -g GG_IT
 ```
 
-Zusätzlich läuft **Samba im Domain-Member-Modus** (via winbind), sodass
-Windows-Clients transparent auf eine Linux-Freigabe zugreifen können,
-mit Zugriffskontrolle über dieselben AD-Gruppen:
+Zusätzlich läuft Samba im Domain-Member-Modus (via winbind), sodass Windows-Clients auf die Linux-Freigabe zugreifen können, mit Zugriffskontrolle über dieselben AD-Gruppen:
 
 ```
 valid users = @"HOMELAB\GG_IT"
 ```
-## 🖼️ Screenshots
 
-| | |
-|---|---|
-| ![AD-Struktur](screenshots/ad-struktur.png) Active-Directory-Struktur (OUs) | ![Samba-Zugriff](screenshots/samba-zugriff.png) Zugriff auf die Linux-Freigabe von CLIENT01 |
-| ![nmap-Test](screenshots/nmap-test.png) nmap-Verifikation der Firewall-Regeln | ![GPO-Ergebnis](screenshots/gpresult-1.png) gpresult-Bericht (angewendete Gruppenrichtlinien) |
+## Firewall
 
-## 🔥 Firewall-Konzept (verifiziert)
-
-Asymmetrische Regeln nach dem Prinzip der minimalen Rechtevergabe:
+Clients dürfen zum Server nur auf die genannten Ports. Der Server darf nicht zu den Clients (Deny-by-Default).
 
 | Richtung | Regel |
 |---|---|
 | Clients → Server (DNS/Kerberos/LDAP/SMB) | Erlaubt (gezielt auf Ports 53, 88, 135, 389, 445) |
 | Server → Clients | Blockiert (Deny-by-Default) |
 
-**Verifiziert mit nmap:**
+Verifiziert mit nmap:
 
 ```
 nmap -Pn -p 53,88,389,445,3389 10.10.20.10
@@ -123,33 +102,19 @@ nmap -Pn -p 53,88,389,445,3389 10.10.20.10
 3389/tcp filtered ms-wbt-server
 ```
 
-Und mit `Test-NetConnection` in beide Richtungen bestätigt: Clients
-erreichen den Server gezielt, aber der Server kann keine Verbindung zu
-Clients aufbauen.
+Und mit `Test-NetConnection` in beide Richtungen bestätigt: Clients erreichen den Server gezielt, aber der Server kann keine Verbindung zu Clients aufbauen.
 
-## 💾 Backup
+## Screenshots
 
-Automatisiertes Proxmox-Backup (täglich, alle VMs, Snapshot-Modus) –
-erfolgreich getestet.
+| | |
+|---|---|
+| ![AD-Struktur](screenshots/ad-struktur.png) Active-Directory-Struktur (OUs) | ![Samba-Zugriff](screenshots/samba-zugriff.png) Zugriff auf die Linux-Freigabe von CLIENT01 |
+| ![nmap-Test](screenshots/nmap-test.png) nmap-Verifikation der Firewall-Regeln | ![GPO-Ergebnis](screenshots/gpresult-1.png) gpresult-Bericht (angewendete Gruppenrichtlinien) |
 
-## 🛠️ Tech Stack
+## Was noch offen ist
 
-`Proxmox VE` `OPNsense` `Windows Server 2022` `Active Directory`
-`Group Policy` `VLANs` `Ubuntu Server` `SSSD` `Samba/winbind` `nmap`
-
-## 📁 Repo-Struktur
-
-- [`diagrams/`](diagrams/) → Architektur-Übersicht
-- [`screenshots/`](screenshots/) → AD-Struktur, GPO-Ergebnis, Fileserver-Zugriff, nmap-Test
-- [`README.md`](README.md) → Diese Übersicht
-
-## 🔭 Geplante Erweiterung
-
-Zabbix-Monitoring (self-hosted auf separatem Host via UTM) zur zentralen
-Überwachung der Server – aktuell in Umsetzung.
+Zabbix-Monitoring (self-hosted auf separatem Host via UTM) zur zentralen Überwachung der Server. Aktuell in Umsetzung.
 
 ---
 
-*Aus Datenschutzgründen wurden Domain-Passwörter, Administrator-Zugangsdaten
-und private Netzwerk-Details aus allen Screenshots entfernt bzw. unkenntlich
-gemacht.*
+*Aus Datenschutzgründen wurden Domain-Passwörter, Administrator-Zugangsdaten und private Netzwerk-Details aus allen Screenshots entfernt bzw. unkenntlich gemacht.*
