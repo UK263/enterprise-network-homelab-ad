@@ -12,7 +12,7 @@ Dazu gehört:
 - Active-Directory-Domäne mit strukturierten Organisationseinheiten
 - Gruppenrichtlinien für Passwort-, Sicherheits- und Laufwerksrichtlinien
 - Ein Linux-Server, der sich gegen Windows-AD authentifiziert und als Fileserver mit AD-Berechtigungen arbeitet
-- Verifizierte Firewall-Regeln und eine funktionierende Backup-Strategie
+- Proxmox-Backup ist eingerichtet, läuft aber noch nicht zuverlässig. Einen Restore habe ich nicht getestet.
 
 ## Aufbau und Netz
 
@@ -33,7 +33,7 @@ Dazu gehört:
 
 ### Backup
 
-Automatisiertes Proxmox-Backup (täglich, alle VMs, Snapshot-Modus). Erfolgreich getestet.
+Proxmox-Backup ist eingerichtet (täglich, alle VMs, Snapshot-Modus). Der Job läuft noch nicht zuverlässig. Einen Restore habe ich nicht getestet.
 
 ## Active Directory und Gruppenrichtlinien
 
@@ -90,7 +90,7 @@ Clients dürfen zum Server nur auf die genannten Ports. Der Server darf nicht zu
 | Clients → Server (DNS/Kerberos/LDAP/SMB) | Erlaubt (gezielt auf Ports 53, 88, 135, 389, 445) |
 | Server → Clients | Blockiert (Deny-by-Default) |
 
-Verifiziert mit nmap:
+Den Scan habe ich von LX01 aus gemacht. LX01 steht im selben VLAN wie der DC. Der Scan zeigt die offenen Ports am DC aus Sicht eines Clients im selben Netz. Eine OPNsense-Firewallregel zwischen VLANs prüft der Scan nicht.
 
 ```
 nmap -Pn -p 53,88,389,445,3389 10.10.20.10
@@ -102,18 +102,16 @@ nmap -Pn -p 53,88,389,445,3389 10.10.20.10
 3389/tcp filtered ms-wbt-server
 ```
 
-Und mit `Test-NetConnection` in beide Richtungen bestätigt: Clients erreichen den Server gezielt, aber der Server kann keine Verbindung zu Clients aufbauen.
-
 ## Screenshots
 
 | | |
 |---|---|
 | ![AD-Struktur](screenshots/ad-struktur.png) Active-Directory-Struktur (OUs) | ![Samba-Zugriff](screenshots/samba-zugriff.png) Zugriff auf die Linux-Freigabe von CLIENT01 |
-| ![nmap-Test](screenshots/nmap-test.png) nmap-Verifikation der Firewall-Regeln | ![GPO-Ergebnis](screenshots/gpresult-1.png) gpresult-Bericht (angewendete Gruppenrichtlinien) |
+| ![nmap-Test](screenshots/nmap-test.png) nmap von LX01 auf den DC (gleiches VLAN) | ![GPO-Ergebnis](screenshots/gpresult-1.png) gpresult-Bericht (angewendete Gruppenrichtlinien) |
 
 ## Was noch offen ist
 
-Zabbix-Monitoring (self-hosted auf separatem Host via UTM) zur zentralen Überwachung der Server. Aktuell in Umsetzung.
+Zabbix-Monitoring (self-hosted auf separatem Host via UTM) zur zentralen Überwachung der Server. Geplant.
 
 ---
 
